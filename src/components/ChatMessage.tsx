@@ -11,7 +11,7 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ sender, message, isVisible, isTyping = false }) => {
   if (sender === 'typing') {
     return (
-      <div className={`flex justify-start mb-4 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`flex justify-start mb-4 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="bg-gray-300 rounded-lg px-4 py-2 max-w-xs">
           <div className="flex space-x-1">
             <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
@@ -26,8 +26,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ sender, message, isVisible, i
   const isYou = sender === 'You';
   
   return (
-    <div className={`flex ${isYou ? 'justify-end' : 'justify-start'} mb-4 transition-all duration-500 ${
-      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+    <div className={`flex ${isYou ? 'justify-end' : 'justify-start'} mb-4 transition-all duration-1000 ease-out ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
     }`}>
       <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
         isYou 

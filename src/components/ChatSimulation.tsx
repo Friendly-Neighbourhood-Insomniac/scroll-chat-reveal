@@ -27,43 +27,67 @@ const ChatSimulation: React.FC = () => {
     { sender: 'Perci' as const, message: 'But don\'t just take my word for it, check it out for yourself :[Game link]' }
   ];
 
+  // Prevent external scrolling until chat is complete
   useEffect(() => {
-    const handleScroll = () => {
-      if (isScrolling) return;
+    if (currentMessageIndex < messages.length) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [currentMessageIndex, messages.length]);
+
+  useEffect(() => {
+    const handleScroll = (e: WheelEvent) => {
+      if (isScrolling || currentMessageIndex >= messages.length) return;
       
-      const currentScrollY = window.scrollY;
+      e.preventDefault();
       
-      // Check if scrolling down and haven't reached the end
-      if (currentScrollY > lastScrollY.current && currentMessageIndex < messages.length) {
+      // Check if scrolling down
+      if (e.deltaY > 0) {
         setIsScrolling(true);
         
         // If current message is typing, show it briefly then advance
         if (messages[currentMessageIndex]?.sender === 'typing') {
           setTimeout(() => {
             setCurrentMessageIndex(prev => Math.min(prev + 2, messages.length)); // Skip typing and show next message
-            setIsScrolling(false);
-          }, 1000);
+            setTimeout(() => setIsScrolling(false), 800); // Slower transition
+          }, 1500); // Show typing longer
         } else {
-          setCurrentMessageIndex(prev => Math.min(prev + 1, messages.length));
-          setIsScrolling(false);
+          setTimeout(() => {
+            setCurrentMessageIndex(prev => Math.min(prev + 1, messages.length));
+            setTimeout(() => setIsScrolling(false), 800); // Slower transition
+          }, 300);
         }
       }
-      
-      lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleScroll, { passive: false });
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleScroll);
+      }
+    };
   }, [currentMessageIndex, isScrolling, messages.length]);
 
   const visibleMessages = messages.slice(0, currentMessageIndex);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
-      <div ref={containerRef} className="max-w-2xl mx-auto p-6">
+    <div 
+      ref={containerRef}
+      className="fixed inset-0 bg-gradient-to-b from-gray-100 to-gray-200 overflow-hidden"
+    >
+      <div className="h-full flex flex-col">
         {/* Chat Header */}
-        <div className="bg-white rounded-t-lg border-b border-gray-200 p-4 mb-6 sticky top-0 z-10 shadow-sm">
-          <div className="flex items-center space-x-3">
+        <div className="bg-white border-b border-gray-200 p-4 shadow-sm flex-shrink-0">
+          <div className="flex items-center space-x-3 max-w-2xl mx-auto">
             <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
               P
             </div>
@@ -75,49 +99,52 @@ const ChatSimulation: React.FC = () => {
         </div>
 
         {/* Chat Messages */}
-        <div className="bg-white rounded-b-lg p-6 shadow-lg min-h-96">
-          {visibleMessages.map((msg, index) => (
-            <ChatMessage
-              key={index}
-              sender={msg.sender}
-              message={msg.message}
-              isVisible={true}
-            />
-          ))}
-          
-          {/* Show current typing indicator if it's a typing message */}
-          {currentMessageIndex < messages.length && messages[currentMessageIndex]?.sender === 'typing' && (
-            <ChatMessage
-              sender="typing"
-              message=""
-              isVisible={true}
-              isTyping={true}
-            />
-          )}
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full bg-white max-w-2xl mx-auto p-6 overflow-y-auto">
+            {visibleMessages.map((msg, index) => (
+              <ChatMessage
+                key={index}
+                sender={msg.sender}
+                message={msg.message}
+                isVisible={true}
+              />
+            ))}
+            
+            {/* Show current typing indicator if it's a typing message */}
+            {currentMessageIndex < messages.length && messages[currentMessageIndex]?.sender === 'typing' && (
+              <ChatMessage
+                sender="typing"
+                message=""
+                isVisible={true}
+                isTyping={true}
+              />
+            )}
+          </div>
         </div>
 
         {/* Scroll instruction */}
         {currentMessageIndex < messages.length && (
-          <div className="text-center mt-8 p-4 bg-blue-50 rounded-lg">
-            <div className="text-blue-600 font-medium">Scroll down to continue the conversation...</div>
-            <div className="text-sm text-blue-500 mt-1">
-              Message {Math.min(currentMessageIndex + 1, messages.length)} of {messages.length}
+          <div className="bg-blue-50 p-4 flex-shrink-0">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="text-blue-600 font-medium">Scroll down to continue the conversation...</div>
+              <div className="text-sm text-blue-500 mt-1">
+                Message {Math.min(currentMessageIndex + 1, messages.length)} of {messages.length}
+              </div>
             </div>
           </div>
         )}
 
         {/* End message */}
         {currentMessageIndex >= messages.length && (
-          <div className="text-center mt-8 p-6 bg-green-50 rounded-lg">
-            <div className="text-green-600 font-medium text-lg">🎉 Conversation Complete!</div>
-            <div className="text-sm text-green-500 mt-2">
-              Refresh the page to experience it again
+          <div className="bg-green-50 p-6 flex-shrink-0">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="text-green-600 font-medium text-lg">🎉 Conversation Complete!</div>
+              <div className="text-sm text-green-500 mt-2">
+                You can now scroll normally or refresh to experience it again
+              </div>
             </div>
           </div>
         )}
-
-        {/* Spacer to enable more scrolling */}
-        <div className="h-screen"></div>
       </div>
     </div>
   );
