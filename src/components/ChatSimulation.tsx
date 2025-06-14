@@ -6,7 +6,7 @@ const ChatSimulation: React.FC = () => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastScrollY = useRef(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const messages = [
     { sender: 'Perci' as const, message: 'Yawn...' },
@@ -26,6 +26,16 @@ const ChatSimulation: React.FC = () => {
     { sender: 'Perci' as const, message: 'I know right! No more watching Cassandra \'slay dem powerpoints\'...pfff do a kickflip boomer -.-' },
     { sender: 'Perci' as const, message: 'But don\'t just take my word for it, check it out for yourself :[Game link]' }
   ];
+
+  // Auto-scroll to center the newest message
+  useEffect(() => {
+    if (messagesEndRef.current && currentMessageIndex > 0) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }, [currentMessageIndex]);
 
   // Prevent external scrolling until chat is complete
   useEffect(() => {
@@ -54,13 +64,13 @@ const ChatSimulation: React.FC = () => {
         if (messages[currentMessageIndex]?.sender === 'typing') {
           setTimeout(() => {
             setCurrentMessageIndex(prev => Math.min(prev + 2, messages.length)); // Skip typing and show next message
-            setTimeout(() => setIsScrolling(false), 800); // Slower transition
+            setTimeout(() => setIsScrolling(false), 1000);
           }, 1500); // Show typing longer
         } else {
           setTimeout(() => {
             setCurrentMessageIndex(prev => Math.min(prev + 1, messages.length));
-            setTimeout(() => setIsScrolling(false), 800); // Slower transition
-          }, 300);
+            setTimeout(() => setIsScrolling(false), 1000);
+          }, 500);
         }
       }
     };
@@ -77,7 +87,14 @@ const ChatSimulation: React.FC = () => {
     };
   }, [currentMessageIndex, isScrolling, messages.length]);
 
-  const visibleMessages = messages.slice(0, currentMessageIndex);
+  // Filter out typing messages that should be replaced by actual messages
+  const visibleMessages = messages.slice(0, currentMessageIndex).filter((msg, index) => {
+    // If this is a typing message and the next message exists and is not typing, hide this typing message
+    if (msg.sender === 'typing' && index < currentMessageIndex - 1) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div 
@@ -110,7 +127,7 @@ const ChatSimulation: React.FC = () => {
               />
             ))}
             
-            {/* Show current typing indicator if it's a typing message */}
+            {/* Show current typing indicator only if it's the current message */}
             {currentMessageIndex < messages.length && messages[currentMessageIndex]?.sender === 'typing' && (
               <ChatMessage
                 sender="typing"
@@ -119,6 +136,9 @@ const ChatSimulation: React.FC = () => {
                 isTyping={true}
               />
             )}
+            
+            {/* Invisible div to help with scrolling */}
+            <div ref={messagesEndRef} />
           </div>
         </div>
 
